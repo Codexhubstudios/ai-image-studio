@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Image Studio — Powered by FLUX</title>
+<style>
+  :root {
+    --bg: #0a0b10;
+    --panel: #12141d;
+    --panel-2: #181b27;
+    --border: #262b3d;
+    --text: #eef1f8;
+    --muted: #8b93a7;
+    --accent: #ff4ecd;
+    --accent-2: #7c5cff;
+    --cyan: #00e5ff;
+    --ok: #2ed573;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background:
+      radial-gradient(1000px 500px at 85% -10%, rgba(255,78,205,.16), transparent 60%),
+      radial-gradient(900px 600px at 0% 100%, rgba(124,92,255,.14), transparent 60%),
+      var(--bg);
+    color: var(--text); min-height: 100vh;
+  }
+  header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 28px; border-bottom: 1px solid var(--border);
+    background: rgba(18,20,29,.8); backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .logo {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2), var(--cyan));
+    display: flex; align-items: center; justify-content: center; font-size: 21px;
+    box-shadow: 0 4px 24px rgba(255,78,205,.4);
+  }
+  .title h1 { font-size: 18px; font-weight: 800; }
+  .title p { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .badge {
+    margin-left: auto; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+    background: rgba(124,92,255,.12); border: 1px solid rgba(124,92,255,.4);
+    color: #c9bfff; padding: 6px 14px; border-radius: 999px;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 22px 60px; }
+  .hero { text-align: center; padding: 26px 0 10px; }
+  .hero h2 {
+    font-size: 34px; font-weight: 800;
+    background: linear-gradient(90deg, #fff, #ff9de8, #00e5ff);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero p { color: var(--muted); margin-top: 8px; font-size: 14px; }
+  .composer {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 20px;
+    padding: 16px; margin-top: 26px; box-shadow: 0 12px 50px rgba(0,0,0,.45);
+  }
+  textarea {
+    width: 100%; background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 12px; color: var(--text); font-size: 15px; font-family: inherit;
+    padding: 14px; min-height: 88px; resize: vertical; outline: none;
+  }
+  textarea:focus { border-color: var(--accent-2); }
+  .row { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 999px; padding: 7px 14px; font-size: 12.5px; cursor: pointer; transition: all .15s;
+  }
+  .chip:hover, .chip.active { border-color: var(--accent); color: var(--text); background: rgba(255,78,205,.08); }
+  .steps { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; margin-left: auto; }
+  .steps input { accent-color: var(--accent); width: 110px; }
+  .gen {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border: none; color: #fff; font-size: 15px; font-weight: 700;
+    padding: 13px 30px; border-radius: 12px; cursor: pointer;
+    box-shadow: 0 6px 22px rgba(255,78,205,.4); transition: transform .15s, opacity .15s;
+  }
+  .gen:hover { transform: translateY(-1px) scale(1.02); }
+  .gen:disabled { opacity: .5; cursor: wait; transform: none; }
+  .status { font-size: 13px; color: var(--muted); min-height: 20px; margin-top: 12px; text-align: center; }
+  .spinner {
+    display: inline-block; width: 15px; height: 15px; border: 2px solid rgba(255,78,205,.3);
+    border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite;
+    vertical-align: -3px; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error {
+    background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.4);
+    color: #ff6b6b; border-radius: 12px; padding: 12px 16px; font-size: 13px; margin-top: 12px;
+  }
+  .gallery-label { margin: 34px 0 14px; font-size: 15px; font-weight: 700; color: var(--text); }
+  .gallery-label span { color: var(--muted); font-weight: 400; font-size: 12.5px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    overflow: hidden; animation: pop .3s ease;
+  }
+  @keyframes pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+  .card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: var(--panel-2); }
+  .card .meta { padding: 10px 12px; }
+  .card .p { font-size: 12px; color: var(--muted); line-height: 1.45; height: 34px; overflow: hidden; }
+  .card .actions { display: flex; gap: 8px; margin-top: 8px; }
+  .card .actions a, .card .actions button {
+    font-size: 11.5px; color: var(--cyan); text-decoration: none; cursor: pointer;
+    background: rgba(0,229,255,.08); border: 1px solid rgba(0,229,255,.3);
+    padding: 5px 10px; border-radius: 7px;
+  }
+  .empty { text-align: center; color: var(--muted); font-size: 13.5px; padding: 40px 0; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 26px 0 34px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🎨</div>
+  <div class="title">
+    <h1>AI Image Studio</h1>
+    <p><span class="dot"></span> FLUX.1-schnell · Cloudflare GPUs · live</p>
+  </div>
+  <div class="badge">12B params · ~2s per image</div>
+</header>
+
+<main>
+  <div class="hero">
+    <h2>Describe it. Get it in seconds.</h2>
+    <p>Text-to-image generation powered by FLUX.1-schnell — running on real GPUs on the Cloudflare edge.</p>
+  </div>
+
+  <div class="composer">
+    <textarea id="prompt" placeholder="A neon-lit cyberpunk city street at night, rain reflections, cinematic…"></textarea>
+    <div class="row">
+      <div class="chips">
+        <button class="chip" data-add=", cinematic lighting, ultra detailed, 4k">✨ Cinematic</button>
+        <button class="chip" data-add=", digital art, vibrant colors, trending on artstation">🎨 Digital art</button>
+        <button class="chip" data-add=", photorealistic, 85mm lens, shallow depth of field">📷 Photoreal</button>
+        <button class="chip" data-add=", anime style, studio ghibli inspired">🌸 Anime</button>
+        <button class="chip" data-add=", 3d render, octane render, soft studio lighting">🧊 3D render</button>
+      </div>
+      <div class="steps">Quality <input type="range" id="steps" min="1" max="8" value="4" step="1"><span id="steps-val">4</span></div>
+      <button class="gen" id="gen">⚡ Generate</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="gallery-label">Your creations <span id="count"></span></div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty">Nothing yet — write a prompt above and hit Generate ⚡</div>
+</main>
+
+<footer>AI Image Studio · FLUX.1-schnell on Cloudflare Workers AI · served via Vercel</footer>
+
+<script>
+const promptEl = document.getElementById('prompt');
+const genBtn = document.getElementById('gen');
+const statusEl = document.getElementById('status');
+const grid = document.getElementById('grid');
+const empty = document.getElementById('empty');
+const countEl = document.getElementById('count');
+const stepsEl = document.getElementById('steps');
+const stepsVal = document.getElementById('steps-val');
+let busy = false, n = 0;
+
+stepsEl.addEventListener('input', () => stepsVal.textContent = stepsEl.value);
+document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+  promptEl.value = promptEl.value.trimEnd() + c.dataset.add;
+  promptEl.focus();
+}));
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function addCard(dataUri, promptText, secs) {
+  empty.style.display = 'none';
+  n++;
+  countEl.textContent = '· ' + n + ' image' + (n > 1 ? 's' : '');
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML =
+    '<img src="' + dataUri + '" alt="generated">' +
+    '<div class="meta"><div class="p">' + esc(promptText) + '</div>' +
+    '<div class="actions"><a download="ai-image-' + n + '.jpg" href="' + dataUri + '">⬇ Download</a>' +
+    '<button onclick="reuse(this)">↻ Reuse prompt</button></div>' +
+    '<div style="font-size:10.5px;color:var(--muted);margin-top:7px">⚡ ' + secs + 's · 1024×1024</div></div>';
+  grid.prepend(card);
+}
+
+function reuse(btn) {
+  promptEl.value = btn.closest('.meta').querySelector('.p').textContent;
+  promptEl.focus();
+}
+
+async function generate() {
+  if (busy) return;
+  const prompt = promptEl.value.trim();
+  if (!prompt) { statusEl.innerHTML = '<span style="color:var(--accent)">Write a prompt first ✍</span>'; return; }
+  busy = true;
+  genBtn.disabled = true;
+  statusEl.innerHTML = '<span class="spinner"></span>Painting your idea on Cloudflare GPUs…';
+  const t0 = Date.now();
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: prompt, steps: parseInt(stepsEl.value, 10) })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'HTTP ' + res.status);
+    const dataUri = 'data:' + (data.mime || 'image/jpeg') + ';base64,' + data.image;
+    const secs = ((Date.now() - t0) / 1000).toFixed(1);
+    addCard(dataUri, prompt, secs);
+    statusEl.innerHTML = '<span style="color:var(--ok)">Done in ' + secs + 's ⚡</span>';
+  } catch (e) {
+    statusEl.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'error';
+    div.textContent = '⚠ ' + e.message;
+    document.querySelector('.composer').appendChild(div);
+    setTimeout(() => div.remove(), 6000);
+  } finally {
+    busy = false;
+    genBtn.disabled = false;
+  }
+}
+
+genBtn.addEventListener('click', generate);
+promptEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); generate(); }
+});
+</script>
+</body>
+</html>
